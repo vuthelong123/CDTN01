@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "Nhân viên tiếp nhận" as TiepNhan
+actor "Quản trị viên" as Admin
+actor "Kỹ thuật viên" as KyThuat
+
+rectangle "Hệ thống quản lý yêu cầu bảo hành" {
+
+    usecase "UC01\nTạo phiếu bảo hành" as UC01
+    usecase "UC02\nPhân loại phiếu bảo hành" as UC02
+    usecase "UC03\nTra cứu phiếu bảo hành" as UC03
+    usecase "UC04\nGán kỹ thuật viên\ncho phiếu bảo hành" as UC04
+    usecase "UC05\nXem phiếu bảo hành\nđược phân công" as UC05
+    usecase "UC06\nCập nhật trạng thái\nphiếu bảo hành" as UC06
+    usecase "UC07\nĐóng phiếu bảo hành" as UC07
+}
+
+TiepNhan --> UC01
+TiepNhan --> UC02
+
+Admin --> UC03
+Admin --> UC04
+Admin --> UC07
+
+KyThuat --> UC05
+KyThuat --> UC06
+
+@enduml
