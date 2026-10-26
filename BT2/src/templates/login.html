@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Đăng nhập hệ thống quản lý phiếu bảo hành.">
+  <title>Đăng nhập · Quản lý bảo hành</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="card login-card" method="post" id="login-form">
+      <h1>🛠 Quản lý bảo hành</h1>
+      <p class="subtitle">Đăng nhập để tiếp tục</p>
+
+      <!-- Thông báo lỗi đăng nhập -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <div class="field">
+        <label for="username">Tên đăng nhập</label>
+        <input id="username" name="username" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn" id="btn-login" type="submit">Đăng nhập</button>
+    </form>
+  </div>
+</body>
+</html>

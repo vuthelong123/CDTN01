@@ -1,0 +1,146 @@
+{# TRANG NHÂN VIÊN TIẾP NHẬN: UC01 tạo phiếu, UC02 phân loại phiếu #}
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, priority_text, warranty_text, due_cell, stepper with context %}
+{% block title %}Tiếp nhận{% endblock %}
+{% block content %}
+<h1>Tiếp nhận bảo hành</h1>
+<p class="subtitle">Tạo phiếu mới và phân loại nhóm sự cố, mức ưu tiên.</p>
+
+<!-- ===== UC01: Form tạo phiếu bảo hành ===== -->
+<section class="card">
+  <h2>➕ Tạo phiếu bảo hành</h2>
+  <form method="post" action="{{ url_for('create_ticket') }}" id="create-form">
+    <div class="grid">
+      <div class="field">
+        <label for="phone">Số điện thoại khách *</label>
+        <input id="phone" name="phone" placeholder="VD: 0843310647 hoặc +84843310647" required>
+        <!-- Kết quả tra cứu khách hiển thị ở đây (xem script phía dưới) -->
+        <span class="hint" id="phone-hint"></span>
+      </div>
+      <div class="field">
+        <label for="full_name">Họ tên khách</label>
+        <input id="full_name" name="full_name" placeholder="Bắt buộc nếu là khách mới">
+      </div>
+      <div class="field">
+        <label for="serial_no">Serial / IMEI *</label>
+        <input id="serial_no" name="serial_no" list="device-list" required>
+        <!-- Gợi ý các thiết bị khách đã có -->
+        <datalist id="device-list"></datalist>
+      </div>
+      <div class="field">
+        <label for="model_name">Model thiết bị</label>
+        <input id="model_name" name="model_name" placeholder="Bắt buộc nếu là thiết bị mới">
+      </div>
+      <div class="field">
+        <label for="purchase_date">Ngày mua</label>
+        <input id="purchase_date" name="purchase_date" type="date">
+      </div>
+      <div class="field">
+        <label for="warranty_months">Số tháng bảo hành</label>
+        <input id="warranty_months" name="warranty_months" type="number" min="0" max="120">
+      </div>
+      <div class="field">
+        <label for="issue_category">Nhóm sự cố</label>
+        <select id="issue_category" name="issue_category">
+          {% for k, v in CATEGORY_LABELS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="priority">Mức ưu tiên</label>
+        <select id="priority" name="priority">
+          {% for k, v in PRIORITY_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if k == 'TRUNG_BINH' }}>{{ v }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field wide">
+        <label for="issue_desc">Mô tả lỗi * (tối thiểu 10 ký tự)</label>
+        <textarea id="issue_desc" name="issue_desc" required minlength="10"></textarea>
+      </div>
+    </div>
+    <p class="muted">Hạn cam kết được tự động tính theo mức ưu tiên: Cao 24h · Trung bình 72h · Thấp 120h (không tính Chủ Nhật).</p>
+    <button class="btn" id="btn-create" type="submit">Lưu phiếu</button>
+  </form>
+</section>
+
+<!-- ===== UC02: Danh sách phiếu + phân loại ===== -->
+<section class="card">
+  <h2>📋 Phiếu gần đây</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Mã phiếu</th><th>Khách hàng</th><th>Thiết bị</th>
+        <th>Phân loại (nhóm sự cố / ưu tiên)</th><th>Trạng thái</th><th>Hạn cam kết</th>
+      </tr></thead>
+      <tbody>
+      {% for t in tickets %}
+        <tr>
+          <td><span class="code">{{ t.ticket_code }}</span><br><span class="muted">{{ t.received_at|dt }}</span></td>
+          <!-- QT-15: SĐT được che với vai trò không phải quản lý -->
+          <td>{{ t.customer_name }}<br><span class="muted">{{ t.customer_phone|mask }}</span></td>
+          <td>{{ t.model_name }}<br><span class="muted">{{ t.serial_no }}</span><br>{{ warranty_text(t.warranty) }}</td>
+          <td>
+            {% if t.ticket_status in ('HOAN_TAT', 'DA_DONG') %}
+              {{ CATEGORY_LABELS[t.issue_category] }} · {{ priority_text(t.priority) }}
+            {% else %}
+              <form class="inline-form" method="post" action="{{ url_for('classify_ticket', ticket_id=t.ticket_id) }}">
+                <select name="issue_category" aria-label="Nhóm sự cố">
+                  {% for k, v in CATEGORY_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if k == t.issue_category }}>{{ v }}</option>{% endfor %}
+                </select>
+                <select name="priority" aria-label="Mức ưu tiên">
+                  {% for k, v in PRIORITY_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if k == t.priority }}>{{ v }}</option>{% endfor %}
+                </select>
+                <button class="btn small ghost" type="submit">Lưu</button>
+              </form>
+            {% endif %}
+          </td>
+          <!-- Thanh tiến trình: thấy ngay khi kỹ thuật viên cập nhật trạng thái -->
+          <td>{{ stepper(t.ticket_status) }}</td>
+          <td>{{ due_cell(t) }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty">Chưa có phiếu nào.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  // US1-AC1/AC2: khi nhập xong SĐT, gọi API tra cứu khách để tự điền thông tin.
+  const phoneInput = document.getElementById('phone');
+  const hint = document.getElementById('phone-hint');
+  const nameInput = document.getElementById('full_name');
+  const deviceList = document.getElementById('device-list');
+  const modelInput = document.getElementById('model_name');
+  let knownDevices = {};   // serial -> model của khách hiện tại
+
+  phoneInput.addEventListener('blur', async () => {
+    if (!phoneInput.value.trim()) return;
+    const res = await fetch('/api/customer?phone=' + encodeURIComponent(phoneInput.value));
+    const data = await res.json();
+    deviceList.innerHTML = '';
+    knownDevices = {};
+    if (!data.valid) {                       // SĐT sai định dạng
+      hint.className = 'hint'; hint.textContent = 'Số điện thoại không hợp lệ.'; return;
+    }
+    phoneInput.value = data.phone;            // QT-02: hiển thị dạng đã chuẩn hóa
+    if (data.found) {                         // Khách đã có: tự điền tên + gợi ý thiết bị
+      nameInput.value = data.full_name;
+      hint.className = 'hint ok'; hint.textContent = '✔ Khách đã có trong hệ thống.';
+      data.devices.forEach(d => {
+        knownDevices[d.serial_no] = d.model_name;
+        const o = document.createElement('option');
+        o.value = d.serial_no; o.label = d.model_name; deviceList.appendChild(o);
+      });
+    } else {                                  // Khách mới: yêu cầu nhập họ tên
+      nameInput.value = '';
+      hint.className = 'hint'; hint.textContent = 'Khách mới – vui lòng nhập họ tên.';
+      nameInput.focus();
+    }
+  });
+
+  // Chọn serial đã có thì tự điền model
+  document.getElementById('serial_no').addEventListener('change', (e) => {
+    if (knownDevices[e.target.value]) modelInput.value = knownDevices[e.target.value];
+  });
+</script>
+{% endblock %}

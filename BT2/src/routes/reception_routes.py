@@ -1,0 +1,69 @@
+"""Routes dành cho Nhân viên tiếp nhận: UC01 tạo phiếu, UC02 phân loại."""
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   request, session, url_for)
+
+from repositories import MySQLTicketRepository, query
+from services import (ValidationError, classify_ticket, create_ticket,
+                      normalize_phone, warranty_state)
+
+from .auth_routes import login_required
+
+reception_bp = Blueprint("reception", __name__)
+
+
+@reception_bp.route("/reception", endpoint="reception")
+@login_required("TIEP_NHAN")
+def reception_view():
+    repo = MySQLTicketRepository()
+    tickets = repo.find_tickets(limit=50)
+    for t in tickets:
+        t["warranty"] = warranty_state(t)
+    return render_template("reception.html", tickets=tickets)
+
+
+@reception_bp.route("/api/customer", endpoint="api_customer")
+@login_required("TIEP_NHAN")
+def api_customer():
+    """US1-AC1: Tìm khách bằng SĐT, tự động trả về thông tin và thiết bị có sẵn."""
+    phone = normalize_phone(request.args.get("phone"))
+    if not phone:
+        return jsonify(valid=False)
+
+    cust = query("SELECT customer_id, full_name, email FROM customer WHERE phone = %s", (phone,), one=True)
+    if not cust:
+        return jsonify(valid=True, found=False, phone=phone)
+
+    devices = query("SELECT serial_no, model_name FROM device WHERE customer_id = %s", (cust["customer_id"],))
+    return jsonify(valid=True, found=True, phone=phone, full_name=cust["full_name"], devices=devices)
+
+
+@reception_bp.route("/reception/create", methods=["POST"], endpoint="create_ticket")
+@login_required("TIEP_NHAN")
+def create_ticket_route():
+    """UC01: Ủy quyền tạo phiếu cho ticket_service."""
+    repo = MySQLTicketRepository()
+    try:
+        res = create_ticket(repo, request.form, session["employee_id"])
+        flash(f"Đã tạo phiếu {res['ticket_code']}. Hạn cam kết: {res['due_date']:%d/%m/%Y %H:%M}.", "success")
+    except ValidationError as exc:
+        flash(exc.message, "error")
+    except Exception as exc:
+        flash(f"Lỗi khi lưu phiếu: {exc}", "error")
+    return redirect(url_for("reception"))
+
+
+@reception_bp.route("/reception/classify/<int:ticket_id>", methods=["POST"], endpoint="classify_ticket")
+@login_required("TIEP_NHAN")
+def classify_ticket_route(ticket_id):
+    """UC02: Phân loại nhóm sự cố và mức ưu tiên."""
+    repo = MySQLTicketRepository()
+    category = request.form.get("issue_category")
+    priority = request.form.get("priority")
+    try:
+        code = classify_ticket(repo, ticket_id, category, priority)
+        flash(f"Đã phân loại phiếu {code}.", "success")
+    except ValidationError as exc:
+        flash(exc.message, "error")
+    except Exception as exc:
+        flash(f"Lỗi: {exc}", "error")
+    return redirect(url_for("reception"))

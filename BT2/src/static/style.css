@@ -1,0 +1,179 @@
+/* ===== Hệ thống quản lý phiếu bảo hành - giao diện tối, hiệu ứng kính ===== */
+:root {
+  --bg: #0b1020;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel-border: rgba(255, 255, 255, 0.12);
+  --text: #e8ecf8;
+  --muted: #8f9bbd;
+  --accent: #7c6cff;
+  --accent-2: #20d3c2;
+  --danger: #ff5d73;
+  --warn: #ffb547;
+  --ok: #3ddc97;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(124, 108, 255, 0.28), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgba(32, 211, 194, 0.18), transparent 60%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ----- Thanh trên cùng ----- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 32px;
+  background: rgba(11, 16, 32, 0.7);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--panel-border);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { font-weight: 700; font-size: 18px; display: flex; gap: 10px; align-items: center; }
+.brand .logo {
+  width: 32px; height: 32px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center; font-size: 17px;
+}
+.userbox { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+.role-chip {
+  padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  background: linear-gradient(135deg, rgba(124,108,255,.35), rgba(32,211,194,.25));
+  border: 1px solid var(--panel-border);
+}
+
+main { max-width: 1280px; margin: 0 auto; padding: 28px 32px 60px; }
+h1 { margin: 0 0 4px; font-size: 26px; }
+.subtitle { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+h2 { margin: 0 0 16px; font-size: 17px; }
+
+/* ----- Thẻ kính ----- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 22px;
+  backdrop-filter: blur(10px);
+  margin-bottom: 22px;
+  animation: rise .4s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ----- Form ----- */
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field.wide { grid-column: 1 / -1; }
+label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+input, select, textarea {
+  background: rgba(8, 12, 26, 0.7);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 108, 255, 0.25);
+}
+select option { background: #121832; }
+textarea { min-height: 84px; resize: vertical; }
+.hint { font-size: 12px; color: var(--muted); min-height: 16px; }
+.hint.ok { color: var(--ok); }
+
+/* ----- Nút ----- */
+.btn {
+  background: linear-gradient(135deg, var(--accent), #5b8bff);
+  color: #fff; border: 0; border-radius: 10px;
+  padding: 10px 18px; font-weight: 600; cursor: pointer; font: inherit; font-weight: 600;
+  transition: transform .15s, box-shadow .2s, filter .2s;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(124, 108, 255, 0.4); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn.ghost { background: transparent; border: 1px solid var(--panel-border); }
+.btn.ghost:hover { box-shadow: none; background: var(--panel); }
+.btn.success { background: linear-gradient(135deg, #1fbf8a, var(--accent-2)); }
+.btn.danger { background: linear-gradient(135deg, #ff5d73, #ff8a5d); }
+
+/* ----- Thông báo ----- */
+.flash { padding: 12px 16px; border-radius: 10px; margin-bottom: 14px; font-size: 14px; animation: rise .3s ease both; }
+.flash.success { background: rgba(61, 220, 151, .14); border: 1px solid rgba(61, 220, 151, .45); }
+.flash.error { background: rgba(255, 93, 115, .14); border: 1px solid rgba(255, 93, 115, .45); }
+
+/* ----- Bảng ----- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 10px 12px; }
+td { padding: 12px; border-top: 1px solid var(--panel-border); vertical-align: top; }
+tbody tr { transition: background .15s; }
+tbody tr:hover { background: rgba(255, 255, 255, 0.04); }
+.code { font-weight: 700; color: var(--accent-2); }
+.muted { color: var(--muted); font-size: 12px; }
+.overdue { color: var(--danger); font-weight: 600; }
+.inline-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.inline-form select { padding: 6px 8px; font-size: 13px; }
+.empty { text-align: center; color: var(--muted); padding: 30px; }
+
+/* ----- Huy hiệu ----- */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.st-MOI { background: rgba(124,108,255,.18); border-color: rgba(124,108,255,.5); }
+.st-DA_PHAN_CONG { background: rgba(91,139,255,.18); border-color: rgba(91,139,255,.5); }
+.st-DANG_XU_LY { background: rgba(255,181,71,.16); border-color: rgba(255,181,71,.5); }
+.st-CHO_LINH_KIEN { background: rgba(255,138,93,.16); border-color: rgba(255,138,93,.5); }
+.st-HOAN_TAT { background: rgba(61,220,151,.16); border-color: rgba(61,220,151,.5); }
+.st-DA_DONG { background: rgba(143,155,189,.16); border-color: rgba(143,155,189,.45); }
+.pr-CAO { color: var(--danger); font-weight: 700; }
+.pr-TRUNG_BINH { color: var(--warn); font-weight: 700; }
+.pr-THAP { color: var(--ok); font-weight: 700; }
+.w-ok { color: var(--ok); }
+.w-expired { color: var(--danger); }
+.w-unverified { color: var(--warn); }
+
+/* ----- Thẻ thống kê ----- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.stat { padding: 16px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--panel-border); transition: transform .2s; }
+.stat:hover { transform: translateY(-3px); }
+.stat .n { font-size: 28px; font-weight: 800; }
+.stat .l { font-size: 12px; color: var(--muted); }
+
+/* ----- Thẻ phiếu của kỹ thuật viên ----- */
+.ticket-card { display: grid; gap: 14px; }
+.ticket-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.kv div span { display: block; }
+.kv .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.desc { background: rgba(8,12,26,.6); border-radius: 10px; padding: 12px; font-size: 14px; line-height: 1.5; }
+
+/* ----- Trang đăng nhập ----- */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login-card { width: 100%; max-width: 410px; padding: 36px; }
+.login-card h1 { text-align: center; font-size: 24px; }
+.login-card .subtitle { text-align: center; }
+.login-card .field { margin-bottom: 16px; }
+.login-card .btn { width: 100%; padding: 12px; }
+.demo { margin-top: 20px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--panel-border); padding-top: 14px; line-height: 1.7; }
+.demo code { background: rgba(255,255,255,.08); padding: 1px 6px; border-radius: 5px; color: var(--text); }
+
+/* ----- Thanh tiến trình trạng thái phiếu ----- */
+.stepper { list-style: none; display: flex; margin: 0; padding: 0; min-width: 330px; }
+.step { flex: 1; text-align: center; position: relative; font-size: 10px; color: var(--muted); }
+.step .dot { display: block; width: 12px; height: 12px; margin: 0 auto 5px; border-radius: 50%; background: rgba(255,255,255,.14); border: 2px solid rgba(255,255,255,.2); position: relative; z-index: 1; }
+.step::before { content: ''; position: absolute; top: 5px; left: -50%; width: 100%; height: 2px; background: rgba(255,255,255,.14); }
+.step:first-child::before { display: none; }
+.step.done::before, .step.current::before { background: var(--ok); }
+.step.done .dot { background: var(--ok); border-color: var(--ok); }
+.step.done { color: var(--ok); }
+.step.current .dot { background: var(--accent); border-color: #fff; box-shadow: 0 0 0 4px rgba(124,108,255,.35); }
+.step.current { color: var(--text); font-weight: 700; }
+.ticket-card .stepper { margin: 6px 0 4px; }

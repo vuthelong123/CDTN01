@@ -1,0 +1,82 @@
+{# TRANG QUẢN TRỊ VIÊN: UC03 tra cứu, UC04 gán kỹ thuật viên, UC07 đóng phiếu #}
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, priority_text, warranty_text, due_cell, stepper with context %}
+{% block title %}Quản trị{% endblock %}
+{% block content %}
+<h1>Bảng điều khiển quản trị</h1>
+<p class="subtitle">Tra cứu phiếu, phân công kỹ thuật viên và đóng phiếu đã hoàn tất.</p>
+
+<!-- Thống kê số phiếu theo trạng thái; bấm vào để lọc nhanh -->
+<div class="stats">
+  {% for k, label in STATUS_LABELS.items() %}
+    <a class="stat" href="{{ url_for('admin', status=k) }}">
+      <div class="n">{{ counts.get(k, 0) }}</div><div class="l">{{ label }}</div>
+    </a>
+  {% endfor %}
+</div>
+
+<!-- ===== UC03: Tra cứu theo mã phiếu và trạng thái ===== -->
+<section class="card">
+  <h2>🔍 Tra cứu phiếu</h2>
+  <form method="get" class="inline-form" id="search-form">
+    <input name="q" value="{{ q }}" placeholder="Mã phiếu, VD: BH-0001" aria-label="Mã phiếu" style="min-width:240px">
+    <select name="status" aria-label="Trạng thái">
+      <option value="">Tất cả trạng thái</option>
+      {% for k, label in STATUS_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if k == status }}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="btn" id="btn-search" type="submit">Tìm</button>
+    <a class="btn ghost" href="{{ url_for('admin') }}">Xóa lọc</a>
+  </form>
+</section>
+
+<section class="card">
+  <h2>📋 Danh sách phiếu ({{ tickets|length }})</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Mã phiếu</th><th>Khách hàng</th><th>Thiết bị / Sự cố</th><th>Ưu tiên</th>
+        <th>Trạng thái</th><th>Hạn cam kết</th><th>Kỹ thuật viên / Thao tác</th>
+      </tr></thead>
+      <tbody>
+      {% for t in tickets %}
+        <tr>
+          <td><span class="code">{{ t.ticket_code }}</span><br><span class="muted">{{ t.received_at|dt }}</span></td>
+          <!-- Quản trị viên được xem SĐT đầy đủ (QT-15) -->
+          <td>{{ t.customer_name }}<br><span class="muted">{{ t.customer_phone }}</span></td>
+          <td>{{ t.model_name }} · {{ CATEGORY_LABELS[t.issue_category] }}<br>
+              <span class="muted">{{ t.serial_no }}</span><br>{{ warranty_text(t.warranty) }}</td>
+          <td>{{ priority_text(t.priority) }}</td>
+          <!-- Thanh tiến trình: thấy ngay khi kỹ thuật viên cập nhật trạng thái -->
+          <td>{{ stepper(t.ticket_status) }}</td>
+          <td>{{ due_cell(t) }}</td>
+          <td>
+            {% if t.technician_id %}
+              <!-- Phiếu đã có KTV: chỉ hiển thị, không cho gán thêm người thứ hai (FR5) -->
+              👤 {{ t.tech_name }}
+              {% if t.ticket_status == 'HOAN_TAT' %}
+                <!-- UC07: nút đóng chỉ xuất hiện khi phiếu đã Hoàn tất -->
+                <form method="post" action="{{ url_for('close_ticket', ticket_id=t.ticket_id) }}" style="margin-top:8px"
+                      onsubmit="return confirm('Đóng phiếu {{ t.ticket_code }}?')">
+                  <button class="btn small success" type="submit">Đóng phiếu</button>
+                </form>
+              {% endif %}
+            {% elif t.ticket_status == 'MOI' %}
+              <!-- UC04: chọn KTV đang hoạt động để phân công -->
+              <form class="inline-form" method="post" action="{{ url_for('assign_ticket', ticket_id=t.ticket_id) }}">
+                <select name="technician_id" required aria-label="Kỹ thuật viên">
+                  <option value="">-- Chọn KTV --</option>
+                  {% for tc in technicians %}<option value="{{ tc.technician_id }}">{{ tc.full_name }} ({{ tc.open_tickets }} phiếu mở)</option>{% endfor %}
+                </select>
+                <button class="btn small" type="submit">Gán</button>
+              </form>
+            {% else %}<span class="muted">—</span>{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="empty">Không có phiếu phù hợp.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{# Các macro dùng lại: huy hiệu trạng thái, tình trạng bảo hành, mức ưu tiên #}
+{% macro status_badge(s) %}<span class="badge st-{{ s }}">{{ STATUS_LABELS[s] }}</span>{% endmacro %}
+
+{% macro priority_text(p) %}<span class="pr-{{ p }}">{{ PRIORITY_LABELS[p] }}</span>{% endmacro %}
+
+{# QT-05: hiển thị tình trạng bảo hành #}
+{% macro warranty_text(w) %}
+  {% if w == 'ok' %}<span class="w-ok">● Còn bảo hành</span>
+  {% elif w == 'expired' %}<span class="w-expired">● Hết bảo hành</span>
+  {% else %}<span class="w-unverified">● Chưa xác minh BH</span>{% endif %}
+{% endmacro %}
+
+{# Ô hạn cam kết: tô đỏ nếu quá hạn mà phiếu chưa hoàn tất #}
+{% macro due_cell(t) %}
+  {% if t.due_date < now and t.ticket_status not in ('HOAN_TAT','DA_DONG') %}
+    <span class="overdue">{{ t.due_date|dt }} (quá hạn)</span>
+  {% else %}{{ t.due_date|dt }}{% endif %}
+{% endmacro %}
+
+{# Thanh tiến trình 6 bước: Mới → Đã phân công → Đang xử lý → Chờ linh kiện → Hoàn tất → Đã đóng.
+   Bước đã qua tô xanh, bước hiện tại nổi bật, bước chưa tới để mờ. Cả 3 vai trò cùng thấy. #}
+{% macro stepper(current) %}
+  {% set idx = STATUS_ORDER.index(current) %}
+  <ol class="stepper" aria-label="Tiến trình phiếu">
+    {% for s in STATUS_ORDER %}
+      <li class="step {{ 'done' if loop.index0 < idx else ('current' if loop.index0 == idx else 'todo') }}">
+        <span class="dot"></span><span class="lbl">{{ STATUS_LABELS[s] }}</span>
+      </li>
+    {% endfor %}
+  </ol>
+{% endmacro %}

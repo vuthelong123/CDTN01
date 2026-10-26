@@ -1,0 +1,21 @@
+# Môi trường và bí mật
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest cache
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Hệ thống & Logs
+*.log
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,52 @@
+{# TRANG KỸ THUẬT VIÊN: UC05 xem phiếu được phân công, UC06 cập nhật trạng thái #}
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, priority_text, warranty_text, due_cell, stepper with context %}
+{% block title %}Kỹ thuật viên{% endblock %}
+{% block content %}
+<h1>Phiếu được phân công</h1>
+<p class="subtitle">Chỉ hiển thị các phiếu thuộc về bạn. Trạng thái chỉ được chuyển tiếp, không quay lại.</p>
+
+<!-- UC05: mỗi phiếu là một thẻ hiển thị đầy đủ chi tiết -->
+{% for t in tickets %}
+  <article class="card ticket-card">
+    <div class="ticket-head">
+      <div><span class="code" style="font-size:18px">{{ t.ticket_code }}</span>
+           <span class="muted">· nhận lúc {{ t.received_at|dt }}</span></div>
+      {{ status_badge(t.ticket_status) }}
+    </div>
+
+    <!-- Thanh tiến trình toàn bộ vòng đời phiếu -->
+    {{ stepper(t.ticket_status) }}
+
+    <div class="kv">
+      <div><span class="k">Khách hàng</span><span>{{ t.customer_name }}</span>
+           <!-- QT-15: SĐT bị che với kỹ thuật viên -->
+           <span class="muted">{{ t.customer_phone|mask }}</span></div>
+      <div><span class="k">Thiết bị</span><span>{{ t.model_name }}</span><span class="muted">{{ t.serial_no }}</span></div>
+      <div><span class="k">Bảo hành</span>{{ warranty_text(t.warranty) }}
+           <span class="muted">Mua: {{ t.purchase_date|d }}{% if t.warranty_months is not none %} · {{ t.warranty_months }} tháng{% endif %}</span></div>
+      <div><span class="k">Nhóm sự cố</span><span>{{ CATEGORY_LABELS[t.issue_category] }}</span></div>
+      <div><span class="k">Mức ưu tiên</span>{{ priority_text(t.priority) }}</div>
+      <div><span class="k">Hạn cam kết</span>{{ due_cell(t) }}</div>
+    </div>
+
+    <div class="desc"><span class="k muted">MÔ TẢ LỖI</span><br>{{ t.issue_desc }}</div>
+
+    <!-- UC06: chỉ liệt kê các trạng thái kế tiếp hợp lệ (QT-06) -->
+    {% if t.next_statuses %}
+      <form class="inline-form" method="post" action="{{ url_for('update_status', ticket_id=t.ticket_id) }}">
+        <label for="ns-{{ t.ticket_id }}" style="margin:0">Chuyển sang:</label>
+        <select id="ns-{{ t.ticket_id }}" name="new_status">
+          {% for s in t.next_statuses %}<option value="{{ s }}">{{ STATUS_LABELS[s] }}</option>{% endfor %}
+        </select>
+        <button class="btn small" type="submit">Cập nhật trạng thái</button>
+      </form>
+    {% else %}
+      <span class="muted">Không còn bước cập nhật nào dành cho kỹ thuật viên
+        {% if t.ticket_status == 'HOAN_TAT' %}(chờ quản trị viên đóng phiếu){% endif %}.</span>
+    {% endif %}
+  </article>
+{% else %}
+  <div class="card empty">Hiện chưa có phiếu nào được phân công cho bạn.</div>
+{% endfor %}
+{% endblock %}
