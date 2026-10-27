@@ -1,15 +1,14 @@
-Down file BT2 ở github về và  giải nén 
-
+Down file ở github về và  giải nén 
 
 HƯỚNG DẪN TÁI TẠO DỰ ÁN
 
 Cách 1: Chạy tự động bằng 1 cú click (Khuyên dùng trên Windows)
-Chỉ cần vào thư mục `BT2` và click đúp vào file:
+Chỉ cần vào thư mục BT2 và click đúp vào file:
 run.bat
 (Script sẽ tự động cài đặt thư viện, chạy 29/29 Unit Tests và khởi động Web Server ngay lập tức).
 
 Cách 2: Chạy bằng 3 câu lệnh thủ công trong Terminal / PowerShell
-1. Mở terminal tại thư mục `BT2`:
+1. Mở terminal tại thư mục BT2:
    cd BT2
 2. Cài đặt thư viện cần thiết:
    pip install -r requirements.txt
