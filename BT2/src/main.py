@@ -76,4 +76,20 @@ def inject_globals():
 
 
 if __name__ == "__main__":
+    import sqlite3
+    from repositories import connect
+
+    conn = connect()
+    db_name = "SQLite nhúng (warranty.db - Tự động khởi tạo, không cần MySQL)" if isinstance(conn, sqlite3.Connection) else "MySQL Server"
+    conn.close()
+
+    print("=" * 65)
+    print(" HE THONG QUAN LY YEU CAU BAO HANH - MEKONG MOBILE (BT2)")
+    print(f" * Co so du lieu : {db_name}")
+    print(" * Dia chi Web   : http://127.0.0.1:5000")
+    print(" * Tai khoan mau :")
+    print("    - Tiep nhan : nhanvientiepnhan / 123456")
+    print("    - Quan tri  : quantrivien     / 123456")
+    print("    - Ky thuat  : kythuatvien     / 123456 (hoac kythuatvien2)")
+    print("=" * 65)
     app.run(debug=True, port=5000)

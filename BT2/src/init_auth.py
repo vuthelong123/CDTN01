@@ -1,5 +1,9 @@
-"""Script khởi tạo cột tài khoản và mật khẩu cho bảng employee (chạy một lần)."""
+"""Script khởi tạo cột tài khoản và mật khẩu cho bảng employee (chạy một lần).
+
+Hỗ trợ cả cơ sở dữ liệu MySQL và SQLite nhúng.
+"""
 import os
+import sqlite3
 import sys
 
 from dotenv import load_dotenv
@@ -15,7 +19,7 @@ DEFAULT_PASSWORD = "123456"
 SEED_USERNAMES = {1: "nhanvientiepnhan", 2: "quantrivien", 3: "kythuatvien", 4: "kythuatvien2"}
 
 
-def column_exists(cur, name):
+def column_exists_mysql(cur, name):
     cur.execute(
         "SELECT COUNT(*) FROM information_schema.COLUMNS "
         "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'employee' AND COLUMN_NAME = %s",
@@ -26,12 +30,17 @@ def column_exists(cur, name):
 
 def main():
     conn = connect()
+    if isinstance(conn, sqlite3.Connection):
+        print("Cơ sở dữ liệu SQLite đã được tự động nạp bảng và tài khoản nhân viên mặc định.")
+        conn.close()
+        return
+
     cur = conn.cursor()
 
-    if not column_exists(cur, "username"):
+    if not column_exists_mysql(cur, "username"):
         cur.execute("ALTER TABLE employee ADD COLUMN username VARCHAR(50) NULL UNIQUE")
         print("Đã thêm cột employee.username")
-    if not column_exists(cur, "password_hash"):
+    if not column_exists_mysql(cur, "password_hash"):
         cur.execute("ALTER TABLE employee ADD COLUMN password_hash VARCHAR(255) NULL")
         print("Đã thêm cột employee.password_hash")
 

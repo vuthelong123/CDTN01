@@ -19,3 +19,9 @@ __pycache__/
 *.log
 Thumbs.db
 Desktop.ini
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+warranty.db
