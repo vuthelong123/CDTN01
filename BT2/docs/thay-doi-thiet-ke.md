@@ -21,5 +21,5 @@ Trong Bài tập 1 (BT1), hệ thống đã xây dựng tài liệu đặc tả 
 | **Giao diện hiển thị trạng thái** | Sử dụng badge trạng thái đơn lẻ. | **Thanh tiến trình (Stepper) 6 bước trực quan:**<br>`Mới` → `Đã phân công` → `Đang xử lý` → `Chờ linh kiện` → `Hoàn tất` → `Đã đóng`. | Giúp cả 3 vai trò (Tiếp nhận, Quản trị, Kỹ thuật) quan sát trực quan vị trí hiện tại của phiếu trong vòng đời SLA. |
 
 ## 3. Tác động tới tài liệu và mã nguồn
-- Bản vẽ kiến trúc thực tế được ghi nhận chi tiết tại [architecture-thuc-te.md](file:///c:/CDTN01/BT2/docs/architecture-thuc-te.md).
-- Toàn bộ các yêu cầu chức năng (FR1 – FR8) và quy tắc nghiệp vụ (QT-01 – QT-06, QT-15) trong [srs.md](file:///c:/CDTN01/BT2/docs/srs.md) đều được đảm bảo vẹn toàn và phản ánh chính xác trong mã nguồn mới.
+Bản vẽ kiến trúc thực tế được ghi nhận chi tiết tại [architecture-thuc-te.md](file:///c:/CDTN01/BT2/docs/architecture-thuc-te.md).
+Toàn bộ các yêu cầu chức năng (FR1 – FR8) và quy tắc nghiệp vụ (QT-01 – QT-06, QT-15) trong [srs.md](file:///c:/CDTN01/BT2/docs/srs.md) đều được đảm bảo vẹn toàn và phản ánh chính xác trong mã nguồn mới.
