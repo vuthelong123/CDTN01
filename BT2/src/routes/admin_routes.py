@@ -1,10 +1,10 @@
-"""Routes dành cho Quản trị viên: UC03 tra cứu, UC04 gán KTV, UC07 đóng phiếu."""
+"""Routes dành cho Quản trị viên: UC03 tra cứu, UC04 gán KTV, cập nhật phiếu."""
 from flask import (Blueprint, flash, redirect, render_template, request,
                    session, url_for)
 
 from repositories import MySQLTicketRepository
-from services import (STATUS_LABELS, ValidationError, assign_technician,
-                      close_ticket, warranty_state)
+from services import (STATUS_LABELS, ValidationError, admin_update_ticket,
+                      assign_technician, warranty_state)
 
 from .auth_routes import login_required
 
@@ -60,13 +60,13 @@ def assign_ticket_route(ticket_id):
     return redirect(request.referrer or url_for("admin"))
 
 
-@admin_bp.route("/admin/close/<int:ticket_id>", methods=["POST"], endpoint="close_ticket")
+@admin_bp.route("/admin/update/<int:ticket_id>", methods=["POST"], endpoint="admin_update_ticket")
 @login_required("QUAN_TRI")
-def close_ticket_route(ticket_id):
+def admin_update_ticket_route(ticket_id):
     repo = MySQLTicketRepository()
     try:
-        code = close_ticket(repo, ticket_id, session["employee_id"])
-        flash(f"Đã đóng phiếu {code}.", "success")
+        code = admin_update_ticket(repo, ticket_id, request.form, session["employee_id"])
+        flash(f"Đã cập nhật thông tin phiếu {code}.", "success")
     except ValidationError as exc:
         repo.rollback()
         flash(exc.message, "error")

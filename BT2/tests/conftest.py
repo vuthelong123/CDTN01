@@ -80,6 +80,50 @@ class FakeTicketRepository:
     def add_status_log(self, ticket_id, from_status, to_status, employee_id):
         self.status_logs.append((ticket_id, from_status, to_status, employee_id))
 
+    def get_ticket_for_update(self, ticket_id):
+        if ticket_id in self.tickets:
+            t = copy.deepcopy(self.tickets[ticket_id])
+            t["ticket_id"] = ticket_id
+            return t
+        return None
+
+    def update_ticket_classification(self, ticket_id, category, priority, due_date):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["issue_category"] = category
+            self.tickets[ticket_id]["priority"] = priority
+            self.tickets[ticket_id]["due_date"] = due_date
+
+    def assign_technician(self, ticket_id, tech_id):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["technician_id"] = tech_id
+            self.tickets[ticket_id]["ticket_status"] = "DA_PHAN_CONG"
+
+    def update_ticket_status(self, ticket_id, new_status):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["ticket_status"] = new_status
+
+    def close_ticket(self, ticket_id, closed_at):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["ticket_status"] = "DA_DONG"
+            self.tickets[ticket_id]["closed_at"] = closed_at
+
+    def update_ticket_desc(self, ticket_id, issue_desc):
+        if ticket_id in self.tickets:
+            self.tickets[ticket_id]["issue_desc"] = issue_desc
+
+    def admin_update_ticket(
+        self, ticket_id, issue_category, priority, due_date, issue_desc, ticket_status, technician_id, closed_at=None
+    ):
+        if ticket_id in self.tickets:
+            t = self.tickets[ticket_id]
+            t["issue_category"] = issue_category
+            t["priority"] = priority
+            t["due_date"] = due_date
+            t["issue_desc"] = issue_desc
+            t["ticket_status"] = ticket_status
+            t["technician_id"] = technician_id
+            t["closed_at"] = closed_at
+
     def commit(self):
         self.commits += 1
         self._saved = self._snapshot()

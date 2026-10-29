@@ -12,7 +12,8 @@ from datetime import date, datetime
 import pytest
 from services import ticket_service
 from services.ticket_service import (MIN_DESC_LENGTH, ValidationError,
-                                     create_ticket)
+                                     admin_update_ticket, close_ticket,
+                                     create_ticket, update_ticket_description)
 
 EMPLOYEE_ID = 1  # nhân viên tiếp nhận thực hiện thao tác
 
@@ -235,3 +236,82 @@ class TestInvalidInput:
         assert ticket_service.normalize_phone("0843310647") == "0843310647"
         assert ticket_service.normalize_phone("843310647") is None
         assert ticket_service.normalize_phone(None) is None
+
+
+
+# ============================================================================
+# 4. CHỈNH SỬA MÔ TẢ VÀ CẬP NHẬT/ĐÓNG PHIẾU
+# ============================================================================
+class TestTicketModificationsAndClosing:
+    def test_update_ticket_description_success(self, repo, make_data, now):
+        """Nhân viên tiếp nhận có thể sửa mô tả cho phiếu còn mở."""
+        t_info = create_ticket(repo, make_data(), EMPLOYEE_ID, now=now)
+        tid = t_info["ticket_id"]
+
+        new_desc = "Thay đổi mô tả lỗi: máy bị vỡ màn hình kèm lỗi sạc"
+        code = update_ticket_description(repo, tid, new_desc, EMPLOYEE_ID)
+
+        assert code == t_info["ticket_code"]
+        assert repo.tickets[tid]["issue_desc"] == new_desc
+
+    def test_update_ticket_description_fails_if_too_short(self, repo, make_data, now):
+        """Mô tả sửa đổi phải đạt tối thiểu 10 ký tự."""
+        t_info = create_ticket(repo, make_data(), EMPLOYEE_ID, now=now)
+        tid = t_info["ticket_id"]
+
+        with pytest.raises(ValidationError) as exc:
+            update_ticket_description(repo, tid, "Quá ngắn", EMPLOYEE_ID)
+        assert f"ít nhất {MIN_DESC_LENGTH} ký tự" in exc.value.message
+
+    def test_update_ticket_description_fails_if_closed(self, repo, make_data, now):
+        """Không cho phép sửa mô tả khi phiếu đã ở trạng thái Đã đóng."""
+        t_info = create_ticket(repo, make_data(), EMPLOYEE_ID, now=now)
+        tid = t_info["ticket_id"]
+        repo.tickets[tid]["ticket_status"] = "DA_DONG"
+
+        with pytest.raises(ValidationError) as exc:
+            update_ticket_description(repo, tid, "Mô tả mới dài hơn 10 ký tự", EMPLOYEE_ID)
+        assert "Phiếu đã đóng" in exc.value.message
+
+    def test_admin_update_ticket_priority_recalculates_due_date(self, repo, make_data, now):
+        """Quản trị viên đổi mức ưu tiên -> hệ thống tự tính lại hạn cam kết SLA."""
+        t_info = create_ticket(repo, make_data(priority="CAO"), EMPLOYEE_ID, now=now)
+        tid = t_info["ticket_id"]
+
+        # Đổi từ CAO (24h) sang THAP (120h)
+        update_data = {
+            "issue_category": "PIN",
+            "priority": "THAP",
+            "ticket_status": "DANG_XU_LY",
+            "issue_desc": "Pin chai nhanh tụt pin cần thay thế",
+            "technician_id": 2,
+        }
+        admin_update_ticket(repo, tid, update_data, EMPLOYEE_ID)
+
+        t = repo.tickets[tid]
+        assert t["issue_category"] == "PIN"
+        assert t["priority"] == "THAP"
+        assert t["ticket_status"] == "DANG_XU_LY"
+        assert t["technician_id"] == 2
+        # THAP = 120h (Thứ Hai 26/10 -> Thứ Bảy 31/10 09:00:00)
+        assert t["due_date"] == datetime(2026, 10, 31, 9, 0, 0)
+        # Có ghi nhận log chuyển từ MOI sang DANG_XU_LY
+        assert (tid, "MOI", "DANG_XU_LY", EMPLOYEE_ID) in repo.status_logs
+
+    def test_close_ticket_only_allowed_when_completed(self, repo, make_data, now):
+        """Chỉ cho phép đóng phiếu khi trạng thái là HOAN_TAT."""
+        t_info = create_ticket(repo, make_data(), EMPLOYEE_ID, now=now)
+        tid = t_info["ticket_id"]
+
+        # Đang là MOI -> đóng sẽ bị từ chối
+        with pytest.raises(ValidationError) as exc:
+            close_ticket(repo, tid, EMPLOYEE_ID)
+        assert "Chỉ đóng được phiếu ở trạng thái Hoàn tất" in exc.value.message
+
+        # Cập nhật sang HOAN_TAT -> đóng thành công
+        repo.tickets[tid]["ticket_status"] = "HOAN_TAT"
+        code = close_ticket(repo, tid, EMPLOYEE_ID)
+        assert code == t_info["ticket_code"]
+        assert repo.tickets[tid]["ticket_status"] == "DA_DONG"
+        assert repo.tickets[tid]["closed_at"] is not None
+        assert (tid, "HOAN_TAT", "DA_DONG", EMPLOYEE_ID) in repo.status_logs

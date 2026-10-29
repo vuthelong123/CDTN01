@@ -115,6 +115,19 @@ class MySQLTicketRepository:
     def update_ticket_status(self, ticket_id, new_status):
         db.execute("UPDATE ticket SET ticket_status = %s WHERE ticket_id = %s", (new_status, ticket_id))
 
+    def update_ticket_desc(self, ticket_id, issue_desc):
+        db.execute("UPDATE ticket SET issue_desc = %s WHERE ticket_id = %s", (issue_desc, ticket_id))
+
+    def admin_update_ticket(
+        self, ticket_id, issue_category, priority, due_date, issue_desc, ticket_status, technician_id, closed_at=None
+    ):
+        db.execute(
+            "UPDATE ticket SET issue_category = %s, priority = %s, due_date = %s, "
+            "issue_desc = %s, ticket_status = %s, technician_id = %s, closed_at = %s "
+            "WHERE ticket_id = %s",
+            (issue_category, priority, due_date, issue_desc, ticket_status, technician_id, closed_at, ticket_id),
+        )
+
     def commit(self):
         db.get_db().commit()
 

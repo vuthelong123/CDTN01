@@ -184,3 +184,73 @@ def update_tech_status(repo, ticket_id, tech_id, new_status, employee_id):
     repo.add_status_log(ticket_id, t["ticket_status"], new_status, employee_id)
     repo.commit()
     return t["ticket_code"], t["ticket_status"], new_status
+
+
+def update_ticket_description(repo, ticket_id, new_desc, employee_id):
+    """Nhân viên tiếp nhận chỉnh sửa mô tả sự cố cho phiếu đã tạo."""
+    desc = (new_desc or "").strip()
+    if len(desc) < MIN_DESC_LENGTH:
+        raise ValidationError(f"Mô tả lỗi phải có ít nhất {MIN_DESC_LENGTH} ký tự.", ["issue_desc"])
+
+    t = repo.get_ticket_for_update(ticket_id)
+    if not t:
+        raise ValidationError("Không tìm thấy phiếu.")
+    if t["ticket_status"] == "DA_DONG":
+        raise ValidationError("Phiếu đã đóng, không thể sửa mô tả.")
+
+    repo.update_ticket_desc(ticket_id, desc)
+    repo.commit()
+    return t["ticket_code"]
+
+
+def admin_update_ticket(repo, ticket_id, data, employee_id):
+    """Quản trị viên cập nhật toàn diện thông tin phiếu bảo hành."""
+    t = repo.get_ticket_for_update(ticket_id)
+    if not t:
+        raise ValidationError("Không tìm thấy phiếu.")
+
+    category = data.get("issue_category", t["issue_category"])
+    priority = data.get("priority", t["priority"])
+    new_status = data.get("ticket_status", t["ticket_status"])
+    desc = (data.get("issue_desc") or t["issue_desc"]).strip()
+    raw_tech = data.get("technician_id")
+    tech_id = int(raw_tech) if raw_tech not in (None, "", "None") else None
+
+    if category not in CATEGORY_LABELS:
+        raise ValidationError("Nhóm sự cố không hợp lệ.")
+    if priority not in PRIORITY_LABELS:
+        raise ValidationError("Mức ưu tiên không hợp lệ.")
+    if new_status not in STATUS_LABELS:
+        raise ValidationError("Trạng thái phiếu không hợp lệ.")
+    if len(desc) < MIN_DESC_LENGTH:
+        raise ValidationError(f"Mô tả lỗi phải có ít nhất {MIN_DESC_LENGTH} ký tự.")
+
+    # Tính lại hạn cam kết nếu mức ưu tiên thay đổi
+    due_date = t["due_date"]
+    if priority != t["priority"]:
+        due_date = compute_due_date(t["received_at"], priority)
+
+    # Ghi log chuyển trạng thái nếu có thay đổi
+    old_status = t["ticket_status"]
+    if new_status != old_status:
+        repo.add_status_log(ticket_id, old_status, new_status, employee_id)
+
+    # Nếu trạng thái chuyển thành DA_DONG mà chưa có closed_at thì ghi nhận thời điểm đóng
+    closed_at = t.get("closed_at")
+    if new_status == "DA_DONG" and not closed_at:
+        closed_at = datetime.now().replace(microsecond=0)
+    elif new_status != "DA_DONG":
+        closed_at = None
+
+    repo.admin_update_ticket(
+        ticket_id=ticket_id,
+        issue_category=category,
+        priority=priority,
+        due_date=due_date,
+        issue_desc=desc,
+        ticket_status=new_status,
+        technician_id=tech_id,
+        closed_at=closed_at,
+    )
+    repo.commit()
+    return t["ticket_code"]

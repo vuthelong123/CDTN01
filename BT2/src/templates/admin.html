@@ -4,7 +4,7 @@
 {% block title %}Quản trị{% endblock %}
 {% block content %}
 <h1>Bảng điều khiển quản trị</h1>
-<p class="subtitle">Tra cứu phiếu, phân công kỹ thuật viên và đóng phiếu đã hoàn tất.</p>
+<p class="subtitle">Tra cứu phiếu, phân công kỹ thuật viên và quản lý cập nhật phiếu bảo hành.</p>
 
 <!-- Thống kê số phiếu theo trạng thái; bấm vào để lọc nhanh -->
 <div class="stats">
@@ -50,26 +50,87 @@
           <td>{{ stepper(t.ticket_status) }}</td>
           <td>{{ due_cell(t) }}</td>
           <td>
-            {% if t.technician_id %}
-              <!-- Phiếu đã có KTV: chỉ hiển thị, không cho gán thêm người thứ hai (FR5) -->
-              👤 {{ t.tech_name }}
-              {% if t.ticket_status == 'HOAN_TAT' %}
-                <!-- UC07: nút đóng chỉ xuất hiện khi phiếu đã Hoàn tất -->
-                <form method="post" action="{{ url_for('close_ticket', ticket_id=t.ticket_id) }}" style="margin-top:8px"
-                      onsubmit="return confirm('Đóng phiếu {{ t.ticket_code }}?')">
-                  <button class="btn small success" type="submit">Đóng phiếu</button>
-                </form>
-              {% endif %}
-            {% elif t.ticket_status == 'MOI' %}
-              <!-- UC04: chọn KTV đang hoạt động để phân công -->
-              <form class="inline-form" method="post" action="{{ url_for('assign_ticket', ticket_id=t.ticket_id) }}">
-                <select name="technician_id" required aria-label="Kỹ thuật viên">
-                  <option value="">-- Chọn KTV --</option>
-                  {% for tc in technicians %}<option value="{{ tc.technician_id }}">{{ tc.full_name }} ({{ tc.open_tickets }} phiếu mở)</option>{% endfor %}
-                </select>
-                <button class="btn small" type="submit">Gán</button>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div>
+                {% if t.technician_id %}
+                  <!-- Phiếu đã có KTV: chỉ hiển thị (FR5) -->
+                  👤 {{ t.tech_name }}
+                {% elif t.ticket_status == 'MOI' %}
+                  <!-- UC04: chọn KTV đang hoạt động để phân công nhanh -->
+                  <form class="inline-form" method="post" action="{{ url_for('assign_ticket', ticket_id=t.ticket_id) }}">
+                    <select name="technician_id" required aria-label="Kỹ thuật viên" style="font-size:12px; padding:4px 6px;">
+                      <option value="">-- Chọn KTV --</option>
+                      {% for tc in technicians %}<option value="{{ tc.technician_id }}">{{ tc.full_name }} ({{ tc.open_tickets }})</option>{% endfor %}
+                    </select>
+                    <button class="btn small" type="submit">Gán</button>
+                  </form>
+                {% else %}
+                  <span class="muted">Chưa gán</span>
+                {% endif %}
+              </div>
+              <div>
+                <button class="btn small ghost" type="button" onclick="document.getElementById('modal-admin-{{ t.ticket_id }}').showModal()">✏️ Cập nhật</button>
+              </div>
+            </div>
+
+            <!-- Modal cập nhật toàn diện thông tin phiếu dành cho Quản trị viên -->
+            <dialog id="modal-admin-{{ t.ticket_id }}" class="edit-dialog">
+              <form method="post" action="{{ url_for('admin_update_ticket', ticket_id=t.ticket_id) }}">
+                <h3>⚙️ Cập nhật phiếu {{ t.ticket_code }}</h3>
+                <p class="muted">Khách hàng: <strong>{{ t.customer_name }}</strong> · Thiết bị: <strong>{{ t.model_name }} ({{ t.serial_no }})</strong></p>
+
+                <div class="grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 12px;">
+                  <div class="field">
+                    <label for="cat-{{ t.ticket_id }}">Nhóm sự cố</label>
+                    <select id="cat-{{ t.ticket_id }}" name="issue_category">
+                      {% for k, v in CATEGORY_LABELS.items() %}
+                        <option value="{{ k }}" {{ 'selected' if k == t.issue_category }}>{{ v }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="pri-{{ t.ticket_id }}">Mức ưu tiên</label>
+                    <select id="pri-{{ t.ticket_id }}" name="priority">
+                      {% for k, v in PRIORITY_LABELS.items() %}
+                        <option value="{{ k }}" {{ 'selected' if k == t.priority }}>{{ v }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="stat-{{ t.ticket_id }}">Trạng thái phiếu</label>
+                    <select id="stat-{{ t.ticket_id }}" name="ticket_status">
+                      {% for k, v in STATUS_LABELS.items() %}
+                        <option value="{{ k }}" {{ 'selected' if k == t.ticket_status }}>{{ v }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="field">
+                    <label for="tech-{{ t.ticket_id }}">Kỹ thuật viên</label>
+                    <select id="tech-{{ t.ticket_id }}" name="technician_id">
+                      <option value="">-- Chưa gán KTV --</option>
+                      {% for tc in technicians %}
+                        <option value="{{ tc.technician_id }}" {{ 'selected' if tc.technician_id == t.technician_id }}>
+                          {{ tc.full_name }} ({{ tc.open_tickets }} phiếu mở)
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+
+                <div class="field wide">
+                  <label for="desc-adm-{{ t.ticket_id }}">Mô tả lỗi (tối thiểu 10 ký tự):</label>
+                  <textarea id="desc-adm-{{ t.ticket_id }}" name="issue_desc" required minlength="10" rows="3">{{ t.issue_desc }}</textarea>
+                </div>
+
+                <div class="dialog-actions">
+                  <button class="btn" type="submit">Lưu cập nhật</button>
+                  <button class="btn ghost" type="button" onclick="document.getElementById('modal-admin-{{ t.ticket_id }}').close()">Hủy</button>
+                </div>
               </form>
-            {% else %}<span class="muted">—</span>{% endif %}
+            </dialog>
           </td>
         </tr>
       {% else %}
