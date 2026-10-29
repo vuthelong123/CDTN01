@@ -5,7 +5,7 @@ HƯỚNG DẪN TÁI TẠO DỰ ÁN
 Cách 1: Chạy tự động bằng 1 cú click (Khuyên dùng trên Windows)
 Chỉ cần vào thư mục BT2 và click đúp vào file:
 run.bat
-(Script sẽ tự động cài đặt thư viện, chạy 29/29 Unit Tests và khởi động Web Server ngay lập tức).
+(Script sẽ tự động cài đặt thư viện, chạy 34/34 Unit Tests và khởi động Web Server ngay lập tức).
 
 Cách 2: Chạy bằng 3 câu lệnh thủ công trong Terminal / PowerShell
 1. Mở terminal tại thư mục BT2:
@@ -13,9 +13,9 @@ Cách 2: Chạy bằng 3 câu lệnh thủ công trong Terminal / PowerShell
 2. Cài đặt thư viện cần thiết:
    pip install -r requirements.txt
    Yêu cầu môi trường: Python 3.8 trở lên (Khuyên dùng: Python 3.10, 3.11 hoặc 3.12)
-4. Chạy kiểm thử tự động (29 Unit Tests):
+4. Chạy kiểm thử tự động (34 Unit Tests):
    pytest -v
-   (Toàn bộ 29 test case đều PASSED trong ~0.05s).
+   (Toàn bộ 34 test case đều PASSED).
 5. Khởi chạy ứng dụng Web:
    python src/main.py
    Hệ thống sẽ tự động tạo cơ sở dữ liệu `warranty.db` và nạp sẵn tài khoản mẫu.
@@ -28,7 +28,7 @@ Danh sách tài khoản đăng nhập thử nghiệm (Mật khẩu chung: `12345
 - Kỹ thuật viên 1: tài khoản `kythuatvien` mật khẩu `123456` Xem phiếu được phân công (UC05), Cập nhật tiến độ theo quy trình tuyến tính (UC06)
 - Kỹ thuật viên 2: tài khoản `kythuatvien2` mật khẩu `123456` Kiểm tra phân quyền cách ly giữa các kỹ thuật viên khác nhau
 
-Kết quả kiểm thử tự động (29 Unit Tests)
+Kết quả kiểm thử tự động (34 Unit Tests)
 Lệnh thực thi:
 pytest -v
-Kết quả: `29 passed in 0.05s`
+Kết quả: 34 passed 
